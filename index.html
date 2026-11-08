@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PlayZone</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070a1a;--card:#0f1433;--line:#232c63;--blue:#3b82ff;--purple:#9d4dff;--neon:#3ef0ff;--pink:#ff3ea5;--txt:#e8ecff;--mut:#7a84b8}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(900px 500px at 50% -10%,#1d1557,var(--bg)) fixed;color:var(--txt);font:15px/1.7 Vazirmatn,Tahoma,sans-serif;padding:12px 12px 96px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.logo{font-family:Orbitron,sans-serif;font-weight:900;font-size:22px;letter-spacing:2px;background:linear-gradient(90deg,var(--neon),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
+.gcard{background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:18px;padding:2px;margin:10px 0;transition:transform .2s,box-shadow .2s}
+.gcard>.in{background:var(--card);border-radius:16px;padding:14px}
+@media(hover:hover){.gcard:hover{transform:translateY(-3px);box-shadow:0 0 26px #9d4dff88}}
+button{font:inherit;font-weight:700;background:linear-gradient(90deg,var(--blue),var(--purple));color:#fff;border:0;border-radius:12px;padding:12px 16px;min-height:46px;cursor:pointer;transition:filter .15s}
+button:hover{filter:brightness(1.15)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--neon);outline-offset:2px}
+button.ghost{background:none;border:1px solid var(--neon);color:var(--neon)}
+button.chip{background:var(--card);border:1px solid var(--line);color:var(--mut);min-height:36px;padding:6px 12px;font-weight:400}
+button.chip.on{border-color:var(--neon);color:var(--neon)}
+input{width:100%;background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit;font-size:20px}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border:0}
+.mut{color:var(--mut);font-size:13px}
+.big{font-size:28px;font-weight:700;color:var(--neon)}
+.bar{height:8px;background:#1a2150;border-radius:9px;overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--neon))}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.hidden{display:none!important}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#0a0e26f2;border-top:1px solid var(--line)}
+nav button{flex:1;background:none;color:var(--mut);border-radius:0;font-size:12px;min-height:58px;padding:4px}
+nav button.on{color:var(--neon);text-shadow:0 0 10px var(--neon)}
+canvas.board{display:block;width:100%;max-width:300px;margin:8px auto;background:#050815;border:1px solid var(--blue);border-radius:12px;touch-action:none;box-shadow:0 0 22px #3b82ff55}
+.pad{display:grid;grid-template-columns:repeat(3,64px);gap:6px;justify-content:center;margin-top:8px}
+.pad button{min-height:56px;padding:0}
+.react{width:100%;min-height:220px;font-size:22px;border-radius:16px;background:#1a2150;color:var(--txt)}
+.react.go{background:linear-gradient(135deg,#0c9d6a,#3ef0ff);color:#021}
+.react.early{background:var(--pink)}
+.qbox{text-align:center}
+.qbox .q{font-size:44px;font-weight:700;direction:ltr;margin:14px 0;text-shadow:0 0 14px var(--purple)}
+.center{text-align:center}
+#msg{position:fixed;top:12px;left:12px;right:12px;max-width:520px;margin:auto;background:var(--card);border:1px solid var(--pink);padding:12px;border-radius:12px;display:none;z-index:9}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">PLAYZONE</div>
+  <button class="chip" id="langBtn" onclick="toggleLang()">EN</button>
+</div>
+
+<div id="noTg" class="card hidden center">این برنامه باید از داخل تلگرام باز شود. ربات را در تلگرام باز کن و /start را بزن.</div>
+
+<!-- HOME -->
+<section id="v-home">
+  <div class="card">
+    <div class="row"><span id="h-name"></span><span class="mut" id="h-lvl"></span></div>
+    <div class="row"><span class="mut" data-t="points"></span><span class="big" id="h-pts">0</span></div>
+    <div class="row"><span class="mut" data-t="plays"></span><span id="h-plays">0</span></div>
+    <div class="bar"><i id="h-bar" style="width:0%"></i></div>
+    <button style="width:100%" onclick="show('games')" data-t="start"></button>
+  </div>
+  <h3 data-t="popular"></h3>
+  <div class="card" id="h-popular"></div>
+  <h3 data-t="recent"></h3>
+  <div class="card" id="h-recent"></div>
+</section>
+
+<!-- GAMES -->
+<section id="v-games" class="hidden">
+  <div class="gcard"><div class="in"><div class="big">🐍</div><b data-t="snake"></b><p class="mut" data-t="snake_d"></p><button onclick="play('snake')" data-t="start"></button></div></div>
+  <div class="gcard"><div class="in"><div class="big">⚡</div><b data-t="reaction"></b><p class="mut" data-t="reaction_d"></p><button onclick="play('reaction')" data-t="start"></button></div></div>
+  <div class="gcard"><div class="in"><div class="big">➗</div><b data-t="math"></b><p class="mut" data-t="math_d"></p><button onclick="play('math')" data-t="start"></button></div></div>
+</section>
+
+<!-- PLAY -->
+<section id="v-play" class="hidden">
+  <div class="top"><b id="p-title"></b><button class="ghost" onclick="quitGame()" data-t="exit"></button></div>
+  <div class="card" id="stage"></div>
+</section>
+
+<!-- RANK -->
+<section id="v-rank" class="hidden">
+  <div class="chips" id="rk-games"></div>
+  <div class="chips" id="rk-periods"></div>
+  <div class="card" id="rk-me"></div>
+  <div class="card" id="rk-list"></div>
+</section>
+
+<!-- PROFILE -->
+<section id="v-profile" class="hidden">
+  <div class="card">
+    <div class="row"><span id="p-name"></span><span class="mut" id="p-user"></span></div>
+    <div class="row"><span class="mut" data-t="level"></span><span class="big" id="p-lvl">1</span></div>
+    <div class="row"><span class="mut" data-t="points"></span><span id="p-pts">0</span></div>
+    <div class="bar"><i id="p-bar" style="width:0%"></i></div>
+    <div id="p-games"></div>
+  </div>
+  <h3 data-t="history"></h3>
+  <div class="card" id="p-hist"></div>
+</section>
+
+<nav>
+  <button data-v="home" onclick="show('home')" data-t="home"></button>
+  <button data-v="games" onclick="show('games')" data-t="games"></button>
+  <button data-v="rank" onclick="show('rank')" data-t="rank"></button>
+  <button data-v="profile" onclick="show('profile')" data-t="profile"></button>
+</nav>
+<div id="msg"></div>
+
+<script>
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const INIT = tg ? tg.initData : '';
+
+const DICT = {
+  fa: {home:'خانه',games:'بازی‌ها',rank:'رتبه‌بندی',profile:'پروفایل',start:'شروع بازی',level:'سطح',points:'امتیاز',plays:'تعداد بازی',
+       popular:'بازی‌های محبوب',recent:'آخرین رکوردها',all:'کلی',week:'۷ روز',month:'۳۰ روز',overall:'کلی',exit:'خروج',
+       again:'بازی دوباره',saved:'امتیاز ثبت شد',history:'تاریخچه',rank_you:'رتبه شما',empty:'هنوز امتیازی نیست',
+       wait:'صبر کن...',tap:'بزن!',early:'زود بود! +۲۰۰۰',game_over:'پایان بازی',score:'امتیاز',
+       snake:'مار',snake_d:'با کشیدن انگشت یا دکمه‌ها مار را هدایت کن و غذا بخور.',
+       reaction:'واکنش',reaction_d:'وقتی صفحه سبز شد سریع بزن. ۵ دور.',
+       math:'محاسبات',math_d:'در ۶۰ ثانیه تا می‌توانی جواب درست بده.',
+       time:'زمان', avg:'میانگین (ms)', game:'بازی'},
+  en: {home:'Home',games:'Games',rank:'Ranking',profile:'Profile',start:'Play',level:'Level',points:'Points',plays:'Games played',
+       popular:'Popular games',recent:'Latest records',all:'All time',week:'7 days',month:'30 days',overall:'Overall',exit:'Quit',
+       again:'Play again',saved:'Score saved',history:'History',rank_you:'Your rank',empty:'No scores yet',
+       wait:'Wait...',tap:'TAP!',early:'Too early! +2000',game_over:'Game over',score:'Score',
+       snake:'Snake',snake_d:'Swipe or use the arrows to steer the snake and eat food.',
+       reaction:'Reaction',reaction_d:'Tap as soon as the box turns green. 5 rounds.',
+       math:'Math Quiz',math_d:'Answer as many questions as you can in 60 seconds.',
+       time:'Time', avg:'Average (ms)', game:'Game'}
+};
+let lang = localStorage.getItem('pz_lang') || 'fa';
+let rankGame = 'overall', rankPeriod = 'all', cancelFn = null, currentGame = null;
+const $ = id => document.getElementById(id);
+const T = k => DICT[lang][k] || k;
+const GAME_NAME = g => T(g === 'overall' ? 'overall' : g);
+
+function esc(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function msg(t){const m=$('msg');m.textContent=t;m.style.display='block';clearTimeout(m._h);m._h=setTimeout(()=>m.style.display='none',4000);}
+
+async function api(path, method='GET', body){
+  const r = await fetch(path, {method, headers:{'Content-Type':'application/json','X-Init-Data':INIT},
+                               body: body ? JSON.stringify(body) : undefined});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error || 'خطا در ارتباط با سرور');
+  return j;
+}
+
+function applyLang(){
+  document.documentElement.lang = lang; document.documentElement.dir = lang==='fa' ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-t]').forEach(el => el.textContent = T(el.dataset.t));
+  $('langBtn').textContent = lang==='fa' ? 'EN' : 'فا';
+  document.querySelector('.logo').style.textAlign = 'left';
+}
+function toggleLang(){ lang = lang==='fa' ? 'en' : 'fa'; localStorage.setItem('pz_lang', lang); applyLang(); loadHome(); }
+
+function show(v){
+  if(cancelFn){ cancelFn(); cancelFn=null; }
+  ['home','games','rank','profile','play'].forEach(x => $('v-'+x).classList.toggle('hidden', x!==v));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v===v));
+  if(v==='home') loadHome();
+  if(v==='rank') { renderChips(); loadRank(); }
+  if(v==='profile') loadProfile();
+}
+
+/* ---------- home ---------- */
+async function loadHome(){
+  const d = await api('/api/home');
+  const p = d.me;
+  $('h-name').textContent = p.name; $('h-lvl').textContent = T('level')+' '+p.level;
+  $('h-pts').textContent = p.points; $('h-plays').textContent = p.plays;
+  $('h-bar').style.width = (p.progress/p.xp_needed*100)+'%';
+  $('h-popular').innerHTML = d.popular.length ? d.popular.map(g =>
+    `<div class="row"><span>${GAME_NAME(g.game)}</span><span class="mut">${g.plays}</span></div>`).join('') : `<p class="mut">${T('empty')}</p>`;
+  $('h-recent').innerHTML = d.recent.length ? d.recent.map(r =>
+    `<div class="row"><span>${esc(r.name)} · ${GAME_NAME(r.game)}</span><span class="mut">${r.value}</span></div>`).join('') : `<p class="mut">${T('empty')}</p>`;
+}
+
+/* ---------- ranking ---------- */
+function renderChips(){
+  const games = ['overall','snake','reaction','math'];
+  $('rk-games').innerHTML = games.map(g=>`<button class="chip ${g===rankGame?'on':''}" onclick="rankGame='${g}';renderChips();loadRank()">${GAME_NAME(g)}</button>`).join('');
+  $('rk-periods').innerHTML = ['all','week','month'].map(p=>`<button class="chip ${p===rankPeriod?'on':''}" onclick="rankPeriod='${p}';renderChips();loadRank()">${T(p)}</button>`).join('');
+}
+async function loadRank(){
+  const d = await api(`/api/ranking?game=${rankGame}&period=${rankPeriod}`);
+  $('rk-me').innerHTML = d.me ? `<div class="row"><span>${T('rank_you')}</span><span class="big">#${d.me.rank}</span></div>` : `<p class="mut">${T('empty')}</p>`;
+  $('rk-list').innerHTML = d.top.length ? d.top.map(r =>
+    `<div class="row" style="${r.is_me?'color:var(--neon)':''}"><span>${r.rank}. ${esc(r.name)}</span><span>${r.value}</span></div>`).join('')
+    : `<p class="mut">${T('empty')}</p>`;
+}
+
+/* ---------- profile ---------- */
+async function loadProfile(){
+  const p = await api('/api/profile');
+  $('p-name').textContent = p.name; $('p-user').textContent = p.username ? '@'+p.username : '';
+  $('p-lvl').textContent = p.level; $('p-pts').textContent = p.points;
+  $('p-bar').style.width = (p.progress/p.xp_needed*100)+'%';
+  $('p-games').innerHTML = ['snake','reaction','math'].map(g => {
+    const x = p.per_game[g] || {plays:0, points:0};
+    return `<div class="row"><span>${GAME_NAME(g)}</span><span class="mut">${x.plays} · ${x.points} ${T('points')}</span></div>`;
+  }).join('');
+  $('p-hist').innerHTML = p.history.length ? p.history.map(h =>
+    `<div class="row"><span>${GAME_NAME(h.game)}</span><span>${h.value}</span></div>`).join('') : `<p class="mut">${T('empty')}</p>`;
+}
+
+/* ---------- games ---------- */
+async function play(name){
+  show('play'); currentGame = name;
+  $('p-title').textContent = GAME_NAME(name);
+  const stage = $('stage'); stage.innerHTML = '';
+  try{
+    const {token} = await api('/api/session','POST',{game:name});
+    const value = await GAMES[name](stage);
+    cancelFn = null;
+    if(value === null) return;
+    const r = await api('/api/score','POST',{token, value});
+    stage.innerHTML = `<div class="center"><div class="mut">${T('game_over')}</div><div class="big">${r.value}</div>
+      <div class="mut">+${r.points} ${T('points')}</div><br><button onclick="play('${name}')">${T('again')}</button>
+      <button class="ghost" onclick="show('rank')" style="margin-top:8px">${T('rank')}</button></div>`;
+    msg(T('saved'));
+  }catch(e){ cancelFn=null; msg(e.message); }
+}
+function quitGame(){ if(cancelFn){ cancelFn(); cancelFn=null; } show('games'); }
+
+const GAMES = {
+  snake(stage){ return new Promise(resolve=>{
+    const N=18, S=16; const c=document.createElement('canvas'); c.className='board'; c.width=N*S; c.height=N*S;
+    const pad=document.createElement('div'); pad.className='pad';
+    pad.innerHTML=`<span></span><button class="chip" data-d="0,-1">▲</button><span></span>
+      <button class="chip" data-d="-1,0">◀</button><span></span><button class="chip" data-d="1,0">▶</button>
+      <span></span><button class="chip" data-d="0,1">▼</button><span></span>`;
+    stage.append(c, pad);
+    const g=c.getContext('2d');
+    let body=[{x:9,y:9}], dir={x:1,y:0}, nd={x:1,y:0}, score=0, done=false;
+    const rnd=()=>Math.floor(Math.random()*N);
+    let food={x:rnd(),y:rnd()};
+    const turn=(x,y)=>{ if(x===-dir.x&&y===-dir.y) return; nd={x,y}; };
+    const key=e=>{ const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key]; if(m){e.preventDefault();turn(...m);} };
+    document.addEventListener('keydown',key);
+    pad.querySelectorAll('button').forEach(b=>b.onclick=()=>turn(...b.dataset.d.split(',').map(Number)));
+    let sx=0, sy=0;
+    c.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+    c.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+      if(Math.max(Math.abs(dx),Math.abs(dy))<20) return; Math.abs(dx)>Math.abs(dy)?turn(Math.sign(dx),0):turn(0,Math.sign(dy));});
+    const draw=()=>{ g.fillStyle='#050815'; g.fillRect(0,0,c.width,c.height);
+      g.fillStyle='#ff3ea5'; g.shadowColor='#ff3ea5'; g.shadowBlur=12; g.fillRect(food.x*S+3,food.y*S+3,S-6,S-6); g.shadowBlur=0;
+      g.fillStyle='#3ef0ff'; body.forEach(p=>g.fillRect(p.x*S+1,p.y*S+1,S-2,S-2)); };
+    const finish=v=>{ if(done) return; done=true; clearInterval(iv); document.removeEventListener('keydown',key); resolve(v); };
+    cancelFn=()=>finish(null);
+    const iv=setInterval(()=>{
+      dir=nd; const h={x:body[0].x+dir.x, y:body[0].y+dir.y};
+      if(h.x<0||h.y<0||h.x>=N||h.y>=N||body.some(p=>p.x===h.x&&p.y===h.y)) return finish(score);
+      body.unshift(h);
+      if(h.x===food.x&&h.y===food.y){ score++; do{food={x:rnd(),y:rnd()};}while(body.some(p=>p.x===food.x&&p.y===food.y)); }
+      else body.pop();
+      draw();
+    },140);
+    draw();
+  });},
+
+  reaction(stage){ return new Promise(resolve=>{
+    const box=document.createElement('button'); box.className='react'; stage.append(box);
+    let round=0, times=[], state='idle', timer=null, t0=0, finished=false;
+    const finish=v=>{ if(finished) return; finished=true; clearTimeout(timer); resolve(v); };
+    cancelFn=()=>finish(null);
+    const next=()=>{
+      round++;
+      if(round>5) return finish(Math.round(times.reduce((a,b)=>a+b,0)/times.length));
+      state='wait'; box.className='react'; box.textContent=`${T('wait')} (${round}/5)`;
+      timer=setTimeout(()=>{ state='go'; t0=performance.now(); box.className='react go'; box.textContent=T('tap'); },1200+Math.random()*2500);
+    };
+    box.onclick=()=>{
+      if(state==='wait'){ clearTimeout(timer); state='done'; times.push(2000); box.className='react early'; box.textContent=T('early'); setTimeout(next,800); }
+      else if(state==='go'){ state='done'; times.push(Math.min(2000,Math.max(80,Math.round(performance.now()-t0)))); box.textContent=times[times.length-1]+' ms'; setTimeout(next,700); }
+    };
+    next();
+  });},
+
+  math(stage){ return new Promise(resolve=>{
+    stage.innerHTML=`<div class="qbox"><div class="mut" id="m-time">${T('time')}: 60</div>
+      <div class="q" id="m-q"></div><input id="m-in" type="number" inputmode="numeric" autocomplete="off">
+      <div class="mut" style="margin-top:8px">${T('score')}: <span id="m-sc">0</span></div></div>`;
+    let ok=0, ans=0, left=60, iv, finished=false;
+    const ask=()=>{ const op=Math.floor(Math.random()*3); let a=2+Math.floor(Math.random()*29), b=2+Math.floor(Math.random()*29), q, r;
+      if(op===0){ q=`${a} + ${b}`; r=a+b; }
+      else if(op===1){ if(a<b)[a,b]=[b,a]; q=`${a} − ${b}`; r=a-b; }
+      else { a=2+Math.floor(Math.random()*11); q=`${a} × ${b}`; r=a*b; }
+      ans=r; $('m-q').textContent=q; };
+    const finish=()=>{ if(finished) return; finished=true; clearInterval(iv); resolve(ok); };
+    cancelFn=()=>{ if(!finished){ finished=true; clearInterval(iv); resolve(null); } };
+    $('m-in').addEventListener('keydown',e=>{ if(e.key==='Enter') check(); });
+    const check=()=>{ const v=Number($('m-in').value); if($('m-in').value==='') return;
+      if(v===ans){ ok++; $('m-sc').textContent=ok; } $('m-in').value=''; ask(); };
+    $('m-in').oninput=()=>{ if(Number($('m-in').value)===ans){ ok++; $('m-sc').textContent=ok; $('m-in').value=''; ask(); } };
+    ask(); $('m-in').focus();
+    iv=setInterval(()=>{ left--; $('m-time').textContent=`${T('time')}: ${left}`; if(left<=0) finish(); },1000);
+  });}
+};
+
+/* ---------- start ---------- */
+applyLang();
+if(!INIT){ $('noTg').classList.remove('hidden'); }
+show('home');
+</script>
+</body>
+</html>
